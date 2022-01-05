@@ -1,117 +1,319 @@
-var dir = "";
+/**
+ * Define the chunk method in the prototype of an array
+ * that returns an array with arrays of the given size.
+ *
+ * @param chunkSize {Integer} Size of every group
+ */
+Object.defineProperty(Array.prototype, 'chunk', {
+    value: function(chunkSize){
+        var temporal = [];
+        
+        for (var i = 0; i < this.length; i+= chunkSize){
+            temporal.push(this.slice(i,i+chunkSize));
+        }
+        
+        return temporal;
+    }
+});
+
+/**
+ * Filter an array down to only distinct values
+ */
+Object.defineProperty(Array.prototype, 'distinct', {
+    value: function(chunkSize){
+        return this.filter((v, i, a) => a.indexOf(v) === i);
+    }
+});
+
+var terminal;
+var hiddenPrompt;
+var hiddenPromptForm;
+
+var config = {};
+var dirsRaw = {};
+var dirs = [];
+var currentDir = "";
+
 var user = "";
 var machineName = "";
 
-function loadDirs(config) {
+var priorCmds = [];
+var selectedCmd = 1;
+
+var program = null;
+var programMode = "menu";
+var programState = "init";
+
+(function() {
+    terminal = document.getElementById("terminal");
+    hiddenPrompt = document.getElementById("hidden-prompt");
+    hiddenPromptForm = document.getElementById("hidden-prompt-form");
+
+    fetch("config.json")
+        .then(response => response.json())
+        .then(json => {
+            config = json;
+            priorCmds = config.priorCmds;
+            selectedCmd = priorCmds.length;
+            loadDirs();
+        });
+    
+})();
+
+function loadDirs() {
     var username = config.github.username;
     var repo = config.github.repo;
     var branch = config.github.branch;
 
-    var url = $`https://api.github.com/repos/${username}/${repo}/git/trees/${branch}?recursive=1`
+    var url = `https://api.github.com/repos/${username}/${repo}/git/trees/${branch}?recursive=1`
 
     fetch(url)
         .then(response => response.json())
-        .then(json => run(config, json));
+        .then(json => {
+            dirsRaw = json;
+            currentDir = config.startDirectory;
+            user = config.login;
+            machineName = config.machineName;
+            run();
+        });
 }
 
-function run(config, dirsRaw) {
-    dir = config.startDirectory;
-    user = config.login;
-    machineName = config.machineName;
-
-    var dirs = [];
-
+function run() {
+    dirs.push({
+        "path":"/",
+        "type":"tree",
+        "depth":0
+    });
     dirsRaw.tree.forEach(dir => {
         if (dir.path.startsWith("ROOT/")) {
-            dirs.add(dir.path.slice(5));
+            var newDir = {
+                "path": dir.path.slice(4),
+                "type": dir.type,
+                "depth": dir.path.slice(4).split("/").length -1
+            };
+            dirs.push(newDir);
         }
     });
 
-    var terminal = document.getElementById("terminal");
-    var hiddenPrompt = document.getElementById("hidden-prompt");
-    var hiddenPromptForm = document.getElementById("hidden-prompt-form");
+    window.setInterval(blink, config.blinkRate);
 
-    window.setInterval(() => blink(terminal, hiddenPrompt), config.blinkRate);
+    hiddenPrompt.addEventListener("blur", onFocus);
+    hiddenPrompt.addEventListener("focus", onFocus);
+    window.addEventListener("focus", onFocus);
+    terminal.addEventListener("focus", onFocus);
+    onFocus();
 
-    window.onfocus = () => onFocus(hiddenPrompt);
-    terminal.onfocus = () => onFocus(hiddenPrompt);
-    hiddenPrompt.onblur = () => onFocus(hiddenPrompt);
-    onFocus(hiddenPrompt);
+    hiddenPrompt.addEventListener("input", onChange);
+    onChange();
 
-    hiddenPrompt.oninput = () => onChange(config, terminal, hiddenPrompt);
-    onChange(config, terminal, hiddenPrompt);
+    hiddenPrompt.addEventListener("keydown", onKeyDown);
 
-    hiddenPromptForm.onsubmit = (e) => onInput(e, config, terminal, hiddenPrompt);
+    hiddenPromptForm.addEventListener("submit", onInput);
 }
 
-function onChange(config, terminal, hiddenPrompt) {
-    var prefix = `${user}@${machineName}:${dir}$ `;
+function onChange() {
+    var prefix = `${user}@${machineName}:${currentDir}$ `;
     terminal.lastElementChild.innerHTML = prefix + hiddenPrompt.value;
 }
 
-function onInput(e, config, terminal, hiddenPrompt) {
-    e.preventDefault();
+function onInput(e) {
+    if (e) {
+        e.preventDefault();
+    }
 
     var oldInput = terminal.lastElementChild;
 
-    var outputNode = document.createElement("div");
-    outputNode.classList.add("entry");
-    outputNode.innerHTML = runCmd(hiddenPrompt.value);
+    if (program) {
+        programInput();
+        return false;
+    }
+
+    var outputText = runCmd().trim();
+    addLine(outputText);
 
     var newInput = document.createElement("div");
     newInput.classList.add("entry");
 
-    terminal.appendChild(outputNode);
     terminal.appendChild(newInput);
 
     oldInput.classList.remove("cursor");
-    outputNode.classList.remove("cursor");
 
     hiddenPrompt.value = "";
 
-    onChange(config, terminal, hiddenPrompt);
+    onChange();
 
     return false;
 }
 
-function runCmd(cmd) {
+function addLine(text) {
+    if (text.length) {
+        var outputNode = document.createElement("div");
+        outputNode.classList.add("entry");
+        outputNode.innerHTML = text;
+        terminal.appendChild(outputNode);
+    }
+}
+
+function runCmd() {
+    var cmd = hiddenPrompt.value.trim();
+
     var args = cmd.split(' ');
-    if (args.length < 1)
+    if (args.length < 1 || args[0].length < 1 || args[0].endsWith("^C"))
         return "";
     
+    priorCmds.push(cmd);
+    selectedCmd = priorCmds.length;
+
     if (args[0] === 'ls')
         return ls(args.slice(1));
     
     if (args[0] === 'cd')
-    return cd(args.slice(1));
+        return cd(args.slice(1));
+
+    if (args[0] === 'exec')
+        return exec(args.slice(1));
 
     if (args[0] === 'help')
-    return help(args.slice(1));
+        return help(args.slice(1));
 
     return unrecognized(args[0]);
 }
 
 function ls(args) {
 
+    if (args.length > 1) {
+        return unrecognized(args[1]);
+    }
+
+    var targetPath = currentDir;
+
+    if (args.length) {
+        targetPath = window.posix.resolve(currentDir, args[0]);
+    }
+
+    if (!targetPath.endsWith("/"))
+        targetPath += "/";
+
+    var results = [`<span class="tree">.</span>`];
+    var depth = targetPath.split("/").filter(s => s.length).length;
+    var matchingDirs = dirs.filter(dir => dir.path.startsWith(currentDir));
+
+    if (!matchingDirs.length) {
+        return unknownPath(targetPath);
+    }
+
+    if (matchingDirs.some(dir => dir.depth < depth)) {
+        results.push(`<span class="tree">..</span>`);
+    }
+
+    matchingDirs.forEach(dir => {
+        if (dir.depth <= depth)
+            return;
+
+        if (dir.depth > depth+1 && dir.type == 'blob')
+            return;
+
+        var subDir = dir.path.replace(targetPath, '').split("/")[0];
+        results.push(`<span class="${dir.type}">${subDir}</span>`);
+    });
+
+    var layers = results.distinct().chunk(4).map(row => row.join(""));
+
+    return "<div class='ls'>" + layers.join("</div><div class='ls'>") + "</div>";
 }
 
 function cd(args) {
-    
+    if (!args.length) {
+        return help("cd");
+    }
+    if (args.length > 1) {
+        return unrecognized(args[1]);
+    }
+
+    var targetPath = window.posix.resolve(currentDir, args[0]);
+
+    if (dirs.some(dir => dir.path === targetPath && dir.type === 'tree'))
+    {
+        currentDir = targetPath;
+    } else {
+        return unknownPath(targetPath);
+    }
+    return "";
+}
+
+function exec(args) {
+    if (!args.length) {
+        return help("exec");
+    }
+    if (args.length > 1) {
+        return unrecognized(args[1]);
+    }
+
+    var targetPath = window.posix.resolve(currentDir, args[0]);
+
+    if (dirs.some(dir => dir.path === targetPath && dir.type === 'blob'))
+    {
+        if (!targetPath.endsWith(".exe")) {
+            return `File "${targetPath}" is not executable.`;
+        }
+        return executePath(targetPath);
+    } else {
+        return unknownFile(targetPath);
+    }
+}
+
+function executePath(path) {
+    var username = config.github.username;
+    var repo = config.github.repo;
+    var branch = config.github.branch;
+
+    var url = `https://api.github.com/repos/${username}/${repo}/git/trees/content/ROOT${path}`;
+    fetch(url)
+        .then(response => response.json())
+        .then(json => {
+            program = json;
+            executeProgram();
+        });
+    return "";
+}
+
+function executeProgram() {
+    var entry = program[programState];
+    addLine(entry.prompt);
+    programMode = entry.type;
+    if (programMode === 'menu') {
+        entry.options.forEach((text, n) => {
+            addLine(`${n}. {text}`);
+        });
+    }
+}
+
+function programInput() {
+
 }
 
 function help(args) {
-    
+    return "";
 }
 
 function unrecognized(cmd) {
     return `Unrecognized command "${cmd}"`;
 }
 
-function onFocus(hiddenPrompt) {
-    hiddenPrompt.focus();
+function unknownPath(path) {
+    return `Unrecognized path "${path}"`;
 }
 
-function blink(terminal, hiddenPrompt) {
+function unknownFile(path) {
+    return `Unrecognized file "${path}"`;
+}
+
+function onFocus() {
+    hiddenPrompt.focus();
+    hiddenPrompt.selectionEnd = hiddenPrompt.selectionStart = hiddenPrompt.value.length;
+}
+
+function blink() {
     if (!terminal.lastElementChild.classList.contains("cursor") && hiddenPrompt.matches(":focus")) {
         terminal.lastElementChild.classList.add("cursor");
     } else {
@@ -119,10 +321,45 @@ function blink(terminal, hiddenPrompt) {
     }
 }
 
+function onKeyDown(e) {
+    if (e.key === 'ArrowUp' && !e.repeat) {
+        return onUp(e);
+    } else if (e.key === 'ArrowDown' && !e.repeat) {
+        return onDown(e);
+    } else if (e.ctrlKey && !e.repeat && e.key === 'c') {
+        return onCancel(e);
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        return false;
+    }
+}
 
-(function() {
-    fetch("config.json")
-        .then(response => response.json())
-        .then(json => run(json));
-    
-})();
+function onUp(e) {
+    if (selectedCmd > 0) {
+        selectedCmd--;
+    }
+    if (selectedCmd < priorCmds.length) {
+        hiddenPrompt.value = priorCmds[selectedCmd];
+        window.setTimeout(onFocus, 0);
+        onChange();
+    }
+    return true;
+}
+
+function onDown(e) {
+    if (selectedCmd < priorCmds.length -1) {
+        selectedCmd++;
+    }
+    if (selectedCmd < priorCmds.length) {
+        hiddenPrompt.value = priorCmds[selectedCmd];
+        window.setTimeout(onFocus, 0);
+        onChange();
+    }
+    return true;
+}
+
+function onCancel() {
+    hiddenPrompt.value += "^C";
+    onChange();
+    onInput();
+}

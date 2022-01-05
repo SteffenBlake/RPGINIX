@@ -1,0 +1,25 @@
+{
+    "init": {
+        "type":"menu",
+        "prompt": "== A Menu Example ==",
+        "options": {
+            "Password Example" : "Password",
+            "Exit" : "Exit"
+        }
+    },
+    "Password": {
+        "type":"menu",
+        "prompt": "== A Password Example (the password is 1234)==",
+        "options": {
+            "1234" : "Success",
+            "" : "init"
+        }
+    },
+    "Success": {
+        "type":"menu",
+        "prompt": "== Password Successful! ==",
+        "options": {
+            "Exit" : "Exit"
+        }
+    }
+}

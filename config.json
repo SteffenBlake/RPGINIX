@@ -9,5 +9,6 @@
     "machineName": "localhost",
     "MOTD": "Hello root!",
     "startDirectory": "/",
-    "blinkRate": 500
+    "blinkRate": 500,
+    "priorCmds": []
 }
