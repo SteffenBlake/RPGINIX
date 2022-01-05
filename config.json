@@ -1,0 +1,13 @@
+{
+    "github": {
+        "username": "SteffenBlake",
+        "repo": "RPGINIX",
+        "branch": "main"
+    },
+
+    "login": "root",
+    "machineName": "localhost",
+    "MOTD": "Hello root!",
+    "startDirectory": "/",
+    "blinkRate": 500
+}
