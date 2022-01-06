@@ -2,24 +2,41 @@
     "init": {
         "type":"menu",
         "prompt": "== A Menu Example ==",
-        "options": {
-            "Password Example" : "Password",
-            "Exit" : "Exit"
-        }
+        "options": [
+            {
+                "prompt": "Password Example",
+                "value": "Password"
+            },
+            {
+                "prompt": "Exit",
+                "value": "Exit"
+            }
+        ]
     },
     "Password": {
         "type":"menu",
         "prompt": "== A Password Example (the password is 1234)==",
         "options": {
-            "1234" : "Success",
-            "" : "init"
+            "options": [
+                {
+                    "prompt": "1234",
+                    "value": "Success"
+                },
+                {
+                    "prompt": "",
+                    "value": "init"
+                }
+            ]
         }
     },
     "Success": {
         "type":"menu",
         "prompt": "== Password Successful! ==",
-        "options": {
-            "Exit" : "Exit"
-        }
+        "options": [
+            {
+                "prompt": "Exit",
+                "value": "Exit"
+            }
+        ]
     }
 }

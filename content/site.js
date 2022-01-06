@@ -267,7 +267,7 @@ function executePath(path) {
     var repo = config.github.repo;
     var branch = config.github.branch;
 
-    var url = `https://api.github.com/repos/${username}/${repo}/git/trees/content/ROOT${path}`;
+    var url = `https://raw.githubusercontent.com/${username}/${repo}/${branch}/ROOT${path}`;
     fetch(url)
         .then(response => response.json())
         .then(json => {
@@ -282,8 +282,8 @@ function executeProgram() {
     addLine(entry.prompt);
     programMode = entry.type;
     if (programMode === 'menu') {
-        entry.options.forEach((text, n) => {
-            addLine(`${n}. {text}`);
+        entry.options.forEach((option, n) => {
+            addLine(`${n}. {option.prompt}`);
         });
     }
 }
