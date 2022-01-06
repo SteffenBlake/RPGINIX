@@ -7,8 +7,10 @@
 
     "login": "root",
     "machineName": "localhost",
-    "MOTD": "Hello root!",
+    "MOTD": "Greetings root! Type 'help' for a list of commands.",
     "startDirectory": "/",
     "blinkRate": 500,
-    "priorCmds": []
+    "priorCmds": {
+        "localhost": []
+    }
 }

@@ -5,7 +5,7 @@
     <link rel="icon" href="content/assets/icon.png" type="image/png" sizes="16x16">
 
     <!-- Style Registrations -->
-    <link rel="stylesheet" type="text/css" href="content/site.css">
+    <link rel="stylesheet" type="text/css" href="content/css/site.css">
 </head>
 
 <body>
@@ -19,5 +19,7 @@
 
 </html>
 
-<script type="text/javascript" src="content/path-browserify.js"></script>
-<script type="text/javascript" src="content/site.js"></script>
+<script type="module">
+    import { startupAsync } from "./content/js/startup.js";
+    document.addEventListener("DOMContentLoaded", startupAsync);
+</script>

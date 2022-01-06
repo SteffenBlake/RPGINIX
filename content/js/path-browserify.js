@@ -22,8 +22,6 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 // USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-'use strict';
-
 function assertPath(path) {
   if (typeof path !== 'string') {
     throw new TypeError('Path must be a string. Received ' + JSON.stringify(path));
@@ -108,7 +106,7 @@ function _format(sep, pathObject) {
   return dir + sep + base;
 }
 
-var posix = {
+let posix = {
   // path.resolve([from ...], to)
   resolve: function resolve() {
     var resolvedPath = '';
@@ -524,9 +522,6 @@ var posix = {
   posix: null
 };
 
-(function() {
-    posix.posix = posix;
+posix.posix = posix;
 
-    window.posix = posix;
-})()
-
+export default posix;
