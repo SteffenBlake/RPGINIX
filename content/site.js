@@ -106,17 +106,20 @@ function run() {
     hiddenPrompt.addEventListener("input", onChange);
     onChange();
 
-    hiddenPrompt.addEventListener("keydown", onKeyDown);
+    hiddenPrompt.addEventListener("keydown", onKeyDownAsync);
 
-    hiddenPromptForm.addEventListener("submit", onInput);
+    hiddenPromptForm.addEventListener("submit", onInputAsync);
 }
 
 function onChange() {
-    var prefix = `${user}@${machineName}:${currentDir}$ `;
+    var prefix = "$";
+    if (!program) {
+        prefix = `${user}@${machineName}:${currentDir}$ `;
+    }
     terminal.lastElementChild.innerHTML = prefix + hiddenPrompt.value;
 }
 
-function onInput(e) {
+async function onInputAsync(e) {
     if (e) {
         e.preventDefault();
     }
@@ -128,7 +131,8 @@ function onInput(e) {
         return false;
     }
 
-    var outputText = runCmd().trim();
+    var outputTextRaw = await runCmdAsync();
+    var outputText = outputTextRaw.trim();
     addLine(outputText);
 
     var newInput = document.createElement("div");
@@ -154,7 +158,7 @@ function addLine(text) {
     }
 }
 
-function runCmd() {
+async function runCmdAsync() {
     var cmd = hiddenPrompt.value.trim();
 
     var args = cmd.split(' ');
@@ -171,7 +175,7 @@ function runCmd() {
         return cd(args.slice(1));
 
     if (args[0] === 'exec')
-        return exec(args.slice(1));
+        return await execAsync(args.slice(1));
 
     if (args[0] === 'help')
         return help(args.slice(1));
@@ -241,7 +245,7 @@ function cd(args) {
     return "";
 }
 
-function exec(args) {
+async function execAsync(args) {
     if (!args.length) {
         return help("exec");
     }
@@ -256,24 +260,21 @@ function exec(args) {
         if (!targetPath.endsWith(".exe")) {
             return `File "${targetPath}" is not executable.`;
         }
-        return executePath(targetPath);
+        return await executePathAsync(targetPath);
     } else {
         return unknownFile(targetPath);
     }
 }
 
-function executePath(path) {
+async function executePathAsync(path) {
     var username = config.github.username;
     var repo = config.github.repo;
     var branch = config.github.branch;
 
     var url = `https://raw.githubusercontent.com/${username}/${repo}/${branch}/ROOT${path}`;
-    fetch(url)
-        .then(response => response.json())
-        .then(json => {
-            program = json;
-            executeProgram();
-        });
+    var response = await fetch(url)
+    program = await response.json();
+    executeProgram();
     return "";
 }
 
@@ -283,7 +284,7 @@ function executeProgram() {
     programMode = entry.type;
     if (programMode === 'menu') {
         entry.options.forEach((option, n) => {
-            addLine(`${n}. {option.prompt}`);
+            addLine(`${n}. ${option.prompt}`);
         });
     }
 }
@@ -321,13 +322,13 @@ function blink() {
     }
 }
 
-function onKeyDown(e) {
+async function onKeyDownAsync(e) {
     if (e.key === 'ArrowUp' && !e.repeat) {
         return onUp(e);
     } else if (e.key === 'ArrowDown' && !e.repeat) {
         return onDown(e);
     } else if (e.ctrlKey && !e.repeat && e.key === 'c') {
-        return onCancel(e);
+        return await onCancelAsync(e);
     } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         e.preventDefault();
         return false;
@@ -358,8 +359,8 @@ function onDown(e) {
     return true;
 }
 
-function onCancel() {
+async function onCancelAsync() {
     hiddenPrompt.value += "^C";
     onChange();
-    onInput();
+    await onInputAsync();
 }
