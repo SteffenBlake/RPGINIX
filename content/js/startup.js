@@ -72,19 +72,19 @@ async function parseDirectoriesAsync(state) {
             if (!internalPath.length)
                 return;
 
-            if (! machineName in state.machines) {
+            if (!(machineName in state.machines)) {
                 state.machines[machineName] = {
                     "/": "tree"
                 };
             }
-            if (! machineName in state.priorCmds) {
+            if (!(machineName in state.priorCmds)) {
                 state.priorCmds[machineName] = [];
             }
 
             state.machines[machineName][internalPath] = dir.type;
         }
         if (dir.path.startsWith("commands/")) {
-            cmdPaths.push(dir.path.splice(9));
+            cmdPaths.push(dir.path.slice(9));
         }
     });
 

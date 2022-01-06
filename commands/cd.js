@@ -1,5 +1,5 @@
 import Help from "./help.js";
-import { addLine } from "../content/js/terminal.js";
+import { addLine, loadPrefix } from "../content/js/terminal.js";
 import Posix from "../content/js/path-browserify.js";
 
 const name = "cd";
@@ -17,13 +17,14 @@ function invoke(state, args) {
 
     var targetPath = Posix.resolve(state.currentDir, args[0]);
 
-    if (Object.keys(state.machines[state.currentMachine]).some(dir => 
-        dir === targetPath && state.machines[state.currentMachine][dir] === 'tree'
+    if (Object.keys(state.machines[state.currentMachineName]).some(dir => 
+        dir === targetPath && state.machines[state.currentMachineName][dir] === 'tree'
     ))
     {
         state.currentDir = targetPath;
+        state = loadPrefix(state);
     } else {
-        addLine($`Unrecognized path: '${targetPath}'`)
+        addLine(`Unrecognized path: '${targetPath}'`)
     }
 
     return state;

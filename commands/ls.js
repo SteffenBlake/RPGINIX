@@ -23,8 +23,8 @@ function invoke(state, args) {
 
     var results = [`<span class="tree">.</span>`];
     var depth = targetPath.split("/").filter(s => s.length).length;
-    var machineDirs = state.machines[state.currentMachine];
-    var matchingDirs = Object.keys(machineDirs).filter(dir => dir.path.startsWith(currentDir));
+    var machineDirs = state.machines[state.currentMachineName];
+    var matchingDirs = Object.keys(machineDirs).filter(dir => dir.startsWith(state.currentDir));
 
     if (!matchingDirs.length) {
         addLine(`Unrecognized path "${targetPath}"`)

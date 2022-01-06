@@ -46,6 +46,7 @@ function onUp(state, e) {
         state.selectedCmd--;
     }
     if (state.selectedCmd < state.priorCmds[state.currentMachineName].length) {
+        var hiddenPrompt = document.getElementById("hidden-prompt");
         hiddenPrompt.value = state.priorCmds[state.currentMachineName][selectedCmd];
         window.setTimeout(onFocus, 0);
         onChange(state);
@@ -58,6 +59,7 @@ function onDown(state, e) {
         state.selectedCmd++;
     }
     if (state.selectedCmd < state.priorCmds[state.currentMachineName].length) {
+        var hiddenPrompt = document.getElementById("hidden-prompt");
         hiddenPrompt.value = state.priorCmds[state.currentMachineName][selectedCmd];
         window.setTimeout(onFocus, 0);
         onChange(state);
@@ -66,6 +68,7 @@ function onDown(state, e) {
 }
 
 async function onCancelAsync(state, e) {
+    var hiddenPrompt = document.getElementById("hidden-prompt");
     hiddenPrompt.value += "^C";
     onChange(state);
     addLine("");
