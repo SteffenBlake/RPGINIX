@@ -34,14 +34,16 @@ export async function startupAsync() {
 
     state.config = {
         github: configLocal.github,
-        MOTD: configLocal.MOTD,
+        logins: configLocal.logins,
+        MOTDs: configLocal.MOTDs,
         blinkRate: configLocal.blinkRate
     }
 
     state.priorCmds = configLocal.priorCmds || {};
-    state.currentLogin = configLocal.login;
-    state.currentMachineName = configLocal.machineName;
-    state.currentDir = configLocal.startDirectory;
+    state.currentLogin = "";
+    state.currentMachineName = configLocal.init.machineName;
+    state.currentDir = configLocal.init.directory;
+    state.commandInjection = "";
 
     state.repoDirs = await FileLoader.fetchDirectories(
         state.config.github.username, 
@@ -49,20 +51,24 @@ export async function startupAsync() {
         state.config.github.branch
     );
 
-    state = Terminal.loadPrefix(state);
-
     state = await parseDirectoriesAsync(state);
     state.selectedCmd = state.priorCmds[state.currentMachineName].length;
-
     state = startupCommands(state);
-
     bindEvents(state);
+
+    Terminal.MOTD(state);
+    Terminal.addLine("");
+
+    await state.commands["su"].invokeAsync(state, [configLocal.init.login])
+
+    state = Terminal.loadPrefix(state);
+    Terminal.onChange(state);
 }
 
 async function parseDirectoriesAsync(state) {
     state.machines = {};
 
-    var cmdPaths = [];
+    var cmdPaths = ["su.js", "nmap.js"];
 
     state.repoDirs.forEach(dir => {
         if (dir.path.startsWith("NETWORK/")) {
@@ -90,10 +96,11 @@ async function parseDirectoriesAsync(state) {
 
     state.commands = {};
 
-    cmdPaths.forEach(async function(cmdPath) {
+    for (var n = 0; n < cmdPaths.length; n++) {
+        var cmdPath = cmdPaths[n];
         const cmd = await import("../../commands/"+cmdPath);
         state.commands[cmd.default.name] = cmd.default;
-    });
+    }
 
     return state;
 }
@@ -119,7 +126,6 @@ function bindEvents(state) {
     Terminal.onFocus();
 
     hiddenPrompt.addEventListener("input", (e) => Terminal.onChange(state, e));
-    Terminal.onChange(state);
 
     hiddenPrompt.addEventListener("keydown", (e) => Terminal.onKeyDownAsync(state, e));
 
@@ -153,10 +159,16 @@ async function runCmdAsync(state) {
     var cmd = hiddenPrompt.value.trim();
 
     var args = cmd.split(' ');
+
+    if (state.commandInjection !== "") {
+        await state.commands[state.commandInjection].invokeAsync(state, args);
+        return;
+    }
+
     if (args.length < 1 || args[0].length < 1)
         return;
     
-    if (args[0].endsWith("^C")) {
+    if (cmd.endsWith("^C")) {
         return;
     }
 
@@ -164,7 +176,7 @@ async function runCmdAsync(state) {
     state.selectedCmd = state.priorCmds[state.currentMachineName].length;
 
     if (args[0] in state.commands) {
-        state = state.commands[args[0]].invoke(state, args.slice(1)) || state;
+        state = (await state.commands[args[0]].invokeAsync(state, args.slice(1))) || state;
         return;
     }
 

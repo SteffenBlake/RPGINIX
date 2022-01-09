@@ -5,12 +5,24 @@
         "branch": "main"
     },
 
-    "login": "root",
-    "machineName": "localhost",
-    "MOTD": "Greetings root! Type 'help' for a list of commands.",
-    "startDirectory": "/",
+    "init": {
+        "login":"root",
+        "machineName": "localhost",
+        "directory": "/"
+    },
+
+    "MOTDs": {
+        "localhost": ["Greetings root!", "Type 'help' for a list of commands."]
+    },
+
     "blinkRate": 500,
     "priorCmds": {
         "localhost": []
+    },
+    "logins": {
+        "localhost": {
+            "root": "",
+            "steve": "password"
+        }
     }
 }

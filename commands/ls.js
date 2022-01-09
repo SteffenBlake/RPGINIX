@@ -7,7 +7,7 @@ function startup(state) {
 
 }
 
-function invoke(state, args) {
+async function invokeAsync(state, args) {
     if (args.length > 1) {
         return unrecognized(args[1]);
     }
@@ -63,6 +63,6 @@ function helpInfo() {
 export default { 
     name,
     startup, 
-    invoke, 
+    invokeAsync, 
     helpInfo 
 }

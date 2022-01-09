@@ -23,9 +23,16 @@ export function onFocus(e) {
 }
 
 export function onChange(state, e) {
+    // Override the onChange event if loaded for a currently running command
+    if (state.commandInjection && state.commands[state.commandInjection].onChange) {
+        return state.commands[state.commandInjection].onChange(state, e);
+    }
+
     var terminal = document.getElementById("terminal");
     var hiddenPrompt = document.getElementById("hidden-prompt");
     terminal.lastElementChild.innerHTML = state.prefix + hiddenPrompt.value;
+
+    return true;
 }
 
 export async function onKeyDownAsync(state, e) {
@@ -75,9 +82,17 @@ async function onCancelAsync(state, e) {
     onChange(state);
 }
 
+export function MOTD(state) {
+    state.config.MOTDs[state.currentMachineName].forEach(addLine);
+    addLine("");
+}
+
 export function loadPrefix(state) {
     state.prefix = `${state.currentLogin}@${state.currentMachineName}:${state.currentDir}$ `;
     return state;
 }
 
+export function sleepAsync(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 

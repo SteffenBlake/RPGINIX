@@ -7,7 +7,7 @@ const name = "cd";
 function startup(state) {
 }
 
-function invoke(state, args) {
+async function invokeAsync(state, args) {
     if (!args.length) {
         return Help.invoke("cd");
     }
@@ -38,6 +38,6 @@ function helpInfo() {
 export default { 
     name,
     startup, 
-    invoke, 
+    invokeAsync, 
     helpInfo 
 }
