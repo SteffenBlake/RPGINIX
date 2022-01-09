@@ -68,7 +68,7 @@ export async function startupAsync() {
 async function parseDirectoriesAsync(state) {
     state.machines = {};
 
-    var cmdPaths = ["su.js", "nmap.js"];
+    var cmdPaths = [];
 
     state.repoDirs.forEach(dir => {
         if (dir.path.startsWith("NETWORK/")) {
